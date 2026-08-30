@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Conversor de Escalas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: "Aptos", Arial, sans-serif;
+      margin: 0; 
+      padding: 20px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 10px;
+      box-sizing: border-box;
+      text-align: center;
+      transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+    }
+
+    header { 
+      text-align: center; 
+      margin-bottom: 20px; 
+    }
+
+    h1 { 
+      font-size: 22px; 
+      margin: 0 0 8px 0; 
+    }
+
+    .scale-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    select {
+      font-family: "Aptos", Arial, sans-serif;
+      padding: 10px;
+      border-radius: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.3s, border 0.3s, color 0.3s;
+    }
+
+    button {
+      font-family: "Aptos", Arial, sans-serif;
+      background: #1976d2; 
+      border: none; 
+      cursor: pointer;
+      font-size: 14px; 
+      color: white; 
+      width: 100%;
+      height: 38px; 
+      border-radius: 6px; 
+      padding: 0;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center; 
+      justify-content: center; 
+      margin: 15px 0 5px 0;
+      transition: 0.3s;
+    }
+    button:hover { background: #0d47a1; }
+
+    #toggleTheme {
+      width: auto;
+      padding: 6px 12px;
+      font-size: 12px;
+      height: auto;
+      margin-top: 5px;
+    }
+
+    /* --- TEMA CLARO --- */
+    body.light {
+      background: #f5f5f5;
+      color: #333;
+    }
+    body.light .container {
+      background: #ffffff;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      color: #333;
+    }
+    body.light h1 {
+      color: #1976d2;
+    }
+    body.light select {
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      color: #333;
+    }
+    body.light #toggleTheme {
+      background: #e0e0e0;
+      color: #333;
+    }
+    body.light #toggleTheme:hover {
+      background: #d0d0d0;
+    }
+
+    /* --- TEMA OSCURO (Por defecto) --- */
+    body.dark {
+      background: #121212;
+      color: #e0e0e0;
+    }
+    body.dark .container {
+      background: #262626;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      color: #e0e0e0;
+    }
+    body.dark h1 {
+      color: #ff5252;
+    }
+    body.dark select {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      color: #fff;
+    }
+    body.dark #toggleTheme {
+      background: #333;
+      color: #fff;
+    }
+    body.dark #toggleTheme:hover {
+      background: #444;
+    }
+
+    footer#teamName { 
+      text-align: center; 
+      margin-top: 30px; 
+      font-family: "Aptos", Arial, sans-serif; 
+      font-size: 15px; 
+      font-weight: normal; 
+      color: #aaa; 
+    }
+    footer#teamName a {
+      color: #81c784;
+      text-decoration: none;
+    }
+    footer#teamName a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body class="dark">
+  <div class="container">
+    <header>
+      <h1>📊 Conversor de Escalas</h1>
+      <button id="toggleTheme">🌞 Tema Claro</button>
+    </header>
+
+    <div class="scale-group">
+      <label for="scale10_05">Escala 1 al 10 (de 0.5 en 0.5):</label>
+      <select id="scale10_05" data-min="1" data-max="10" data-step="0.5"></select>
+    </div>
+
+    <div class="scale-group">
+      <label for="scale10_1">Escala 1 al 10 (de 1 en 1):</label>
+      <select id="scale10_1" data-min="1" data-max="10" data-step="1"></select>
+    </div>
+
+    <div class="scale-group">
+      <label for="scale5_05">Escala 1 al 5 (de 0.5 en 0.5):</label>
+      <select id="scale5_05" data-min="1" data-max="5" data-step="0.5"></select>
+    </div>
+
+    <div class="scale-group">
+      <label for="scale5_1">Escala 1 al 5 (de 1 en 1):</label>
+      <select id="scale5_1" data-min="1" data-max="5" data-step="1"></select>
+    </div>
+
+    <button id="btnReset">🔄 Reiniciar valores</button>
+  </div>
+
+  <footer id="teamName">
+    <a href="https://darkpassengerpy.github.io/tools/" target="_blank">Desarrollado por Dark Passenger Tools</a>
+  </footer>
+
+  <script>
+    const selects = document.querySelectorAll("select");
+    const toggleBtn = document.getElementById("toggleTheme");
+
+    // Llenar los selectores con sus valores correspondientes
+    selects.forEach(select => {
+      const min = parseFloat(select.dataset.min);
+      const max = parseFloat(select.dataset.max);
+      const step = parseFloat(select.dataset.step);
+
+      for (let v = min; v <= max; v += step) {
+        const option = document.createElement("option");
+        option.value = v;
+        option.textContent = v % 1 !== 0 ? v.toFixed(1) : v;
+        select.appendChild(option);
+      }
+    });
+
+    // Función para actualizar equivalencias de manera proporcional
+    function actualizarEquivalencias(sourceSelect) {
+      const sourceMin = parseFloat(sourceSelect.dataset.min);
+      const sourceMax = parseFloat(sourceSelect.dataset.max);
+      const sourceVal = parseFloat(sourceSelect.value);
+
+      const porcentaje = (sourceVal - sourceMin) / (sourceMax - sourceMin);
+
+      selects.forEach(target => {
+        if (target === sourceSelect) return;
+
+        const targetMin = parseFloat(target.dataset.min);
+        const targetMax = parseFloat(target.dataset.max);
+        const targetStep = parseFloat(target.dataset.step);
+
+        let rawVal = targetMin + porcentaje * (targetMax - targetMin);
+        let steps = Math.round((rawVal - targetMin) / targetStep);
+        let snappedVal = targetMin + steps * targetStep;
+
+        snappedVal = Math.max(targetMin, Math.min(targetMax, snappedVal));
+
+        target.value = snappedVal % 1 !== 0 ? snappedVal.toFixed(1) : snappedVal;
+      });
+    }
+
+    selects.forEach(select => {
+      select.addEventListener("change", () => {
+        actualizarEquivalencias(select);
+      });
+    });
+
+    document.getElementById("btnReset").onclick = () => {
+      selects.forEach(s => s.selectedIndex = 0);
+      actualizarEquivalencias(selects[0]);
+    };
+
+    toggleBtn.onclick = () => {
+      document.body.classList.toggle("dark");
+      document.body.classList.toggle("light");
+      const esDark = document.body.classList.contains("dark");
+      toggleBtn.textContent = esDark ? "🌞 Tema Claro" : "🌙 Tema Oscuro";
+      localStorage.setItem("temaEscalas", esDark ? "dark" : "light");
+    };
+
+    // Cargar el tema guardado, por defecto será "dark"
+    const temaGuardado = localStorage.getItem("temaEscalas") || "dark";
+    document.body.classList.remove("light", "dark");
+    document.body.classList.add(temaGuardado);
+    toggleBtn.textContent = temaGuardado === "dark" ? "🌞 Tema Claro" : "🌙 Tema Oscuro";
+  </script>
+</body>
+</html>
