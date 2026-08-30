@@ -335,6 +335,44 @@
   </div>
 
   <div class="bloque">
+    <h2>📊 Tabla Chely</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Monto</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpoTablaChely"></tbody>
+      <tfoot>
+        <tr>
+          <td>Total</td>
+          <td id="totalChelySola">0</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="bloque">
+    <h2>📊 Tabla Negocio</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Monto</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpoTablaNegocio"></tbody>
+      <tfoot>
+        <tr>
+          <td>Total</td>
+          <td id="totalNegocioSolo">0</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="bloque">
     <button class="btn-copiar" onclick="copiarResumen()">📋 Copiar resumen</button>
     <div id="resumen" style="margin-top: 10px; line-height: 1.5; font-size: 13px;"></div>
   </div>
@@ -463,6 +501,43 @@
     }
 
     // ------------------------------------------------------------
+    // TABLAS INDIVIDUALES — solo Chely y solo Negocio
+    // ------------------------------------------------------------
+    function renderTablasIndividuales() {
+      const ordenarCuenta = (cuenta) => movimientos
+        .map((m, i) => ({ ...m, i }))
+        .filter(m => m.cuenta === cuenta)
+        .sort((a, b) => a.fecha.localeCompare(b.fecha) || b.i - a.i);
+
+      const chely = ordenarCuenta("Chely");
+      const negocio = ordenarCuenta("Negocio");
+
+      const cuerpoChely = document.getElementById("cuerpoTablaChely");
+      cuerpoChely.innerHTML = chely.length === 0
+        ? `<tr><td colspan="2"><i>Sin datos aún</i></td></tr>`
+        : chely.map(m => `
+            <tr>
+              <td>${formatearFecha(m.fecha)}</td>
+              <td>${formatearMonto(m.monto)}</td>
+            </tr>
+          `).join("");
+      document.getElementById("totalChelySola").textContent =
+        formatearMonto(chely.reduce((s, m) => s + m.monto, 0));
+
+      const cuerpoNegocio = document.getElementById("cuerpoTablaNegocio");
+      cuerpoNegocio.innerHTML = negocio.length === 0
+        ? `<tr><td colspan="2"><i>Sin datos aún</i></td></tr>`
+        : negocio.map(m => `
+            <tr>
+              <td>${formatearFecha(m.fecha)}</td>
+              <td>${formatearMonto(m.monto)}</td>
+            </tr>
+          `).join("");
+      document.getElementById("totalNegocioSolo").textContent =
+        formatearMonto(negocio.reduce((s, m) => s + m.monto, 0));
+    }
+
+    // ------------------------------------------------------------
     // RESUMEN COPIABLE
     // ------------------------------------------------------------
     function mostrarResumen() {
@@ -505,6 +580,7 @@
     function renderTodo() {
       renderLista();
       renderTabla();
+      renderTablasIndividuales();
       mostrarResumen();
     }
 
