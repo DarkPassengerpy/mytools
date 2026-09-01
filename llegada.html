@@ -2,9 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Registro de Llegadas Tardías</title>
+  <title>Registro de Llegadas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="ico.png">
   <style>
     body {
       font-family: "Aptos", Arial, sans-serif;
@@ -61,6 +60,15 @@
       font-weight: bold;
     }
     .btn-exportar:hover { background: #128c7e; }
+
+    .btn-calendario {
+      background: #f57c00;
+      color: #fff;
+      width: auto;
+      padding: 0 15px;
+      font-weight: bold;
+    }
+    .btn-calendario:hover { background: #e65100; }
 
     .btn-limpiar {
       background: #d32f2f;
@@ -175,6 +183,10 @@
       <div style="text-align: center;">
         <button class="btn-exportar" onclick="exportar('mes')">Copiar Mes 📋</button>
         <button class="btn-exportar" onclick="exportar('todo')">Copiar Todo 📋</button>
+      </div>
+      <div style="text-align: center; margin-top: 8px;">
+        <button class="btn-calendario" onclick="exportarCalendarioMes()">Calendario del Mes 📅</button>
+        <button class="btn-calendario" onclick="exportarCalendarioAnio()">Calendario del Año 📅📅</button>
       </div>
     </div>
 
@@ -378,6 +390,177 @@
       }).catch(() => {
         alert("Error al copiar automáticamente.");
       });
+    }
+
+    // ============ CALENDARIO EXCEL (mensual y anual, estilo plantilla) ============
+    // La semana arranca en Domingo (D L M X J V S), con columna de
+    // número de semana, igual que la plantilla de referencia.
+
+    const DIAS_SEMANA_DOM = ["D", "L", "M", "X", "J", "V", "S"];
+
+    // Número de semana continuo dentro del año (semana que contiene el
+    // 1 de enero = semana 1). Una semana partida entre dos meses tiene
+    // el mismo número en ambos meses, igual que en la plantilla.
+    function numeroSemanaAnio(fecha, anio) {
+      const inicioAnio = new Date(anio, 0, 1);
+      const diaSemanaInicio = inicioAnio.getDay(); // 0 = Domingo
+      const primerDomingo = new Date(anio, 0, 1 - diaSemanaInicio);
+      const diffDias = Math.round((fecha - primerDomingo) / 86400000);
+      return Math.floor(diffDias / 7) + 1;
+    }
+
+    // Arma las semanas (Domingo a Sábado) que cubren un mes. Cada
+    // semana trae su número y los 7 días (null si el día es de otro mes).
+    function generarSemanasMes(anio, mes) {
+      const primerDia = new Date(anio, mes - 1, 1);
+      const ultimoDia = new Date(anio, mes, 0);
+
+      let inicioSemana = new Date(primerDia);
+      inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
+
+      let semanas = [];
+      while (inicioSemana <= ultimoDia) {
+        const weekNum = numeroSemanaAnio(inicioSemana, anio);
+        let dias = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(inicioSemana);
+          d.setDate(d.getDate() + i);
+          dias.push(d.getMonth() === mes - 1 ? d.getDate() : null);
+        }
+        semanas.push({ weekNum, dias });
+        inicioSemana.setDate(inicioSemana.getDate() + 7);
+      }
+      return semanas;
+    }
+
+    // Tabla de un solo mes (para la exportación mensual).
+    function generarTablaCalendarioMes(anio, mes) {
+      const nombreMes = obtenerNombreMes(`${anio}-${String(mes).padStart(2, "0")}`);
+      const mesKey = `${anio}-${String(mes).padStart(2, "0")}`;
+      const fechasRegistradas = new Set(
+        registros.filter(r => r.fecha.startsWith(mesKey)).map(r => r.fecha)
+      );
+      const semanas = generarSemanasMes(anio, mes);
+
+      let html = `<table border="1" style="border-collapse:collapse; font-family:Aptos, Arial, sans-serif; text-align:center;">`;
+      html += `<tr><td></td><td colspan="7" style="background:#333333;color:#ffffff;font-weight:bold;font-size:14px;padding:6px;">${nombreMes}</td></tr>`;
+      html += `<tr><td></td>${DIAS_SEMANA_DOM.map(d => `<td style="background:#dddddd;font-weight:bold;padding:4px;">${d}</td>`).join("")}</tr>`;
+
+      semanas.forEach(semana => {
+        html += `<tr><td style="background:#f0f0f0;font-size:11px;color:#888888;">${semana.weekNum}</td>`;
+        semana.dias.forEach(d => {
+          if (d === null) {
+            html += `<td style="padding:14px;">&nbsp;</td>`;
+          } else {
+            const fechaStr = `${anio}-${String(mes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+            const esTardia = fechasRegistradas.has(fechaStr);
+            const estilo = esTardia
+              ? "background:#ff0000;color:#ffffff;font-weight:bold;padding:14px;"
+              : "padding:14px;";
+            html += `<td style="${estilo}">${d}</td>`;
+          }
+        });
+        html += "</tr>";
+      });
+      html += "</table>";
+      return html;
+    }
+
+    // Bloque de 3 meses lado a lado (una "fila" del póster anual).
+    function generarBloqueTresMeses(anio, mesInicio) {
+      const meses = [mesInicio, mesInicio + 1, mesInicio + 2];
+      const datosMeses = meses.map(mes => {
+        const mesKey = `${anio}-${String(mes).padStart(2, "0")}`;
+        return {
+          mes,
+          nombreMes: obtenerNombreMes(mesKey),
+          semanas: generarSemanasMes(anio, mes),
+          fechasRegistradas: new Set(
+            registros.filter(r => r.fecha.startsWith(mesKey)).map(r => r.fecha)
+          )
+        };
+      });
+
+      const maxSemanas = Math.max(...datosMeses.map(m => m.semanas.length));
+
+      let html = "<tr>";
+      datosMeses.forEach(m => {
+        html += `<td></td><td colspan="7" style="background:#333333;color:#ffffff;font-weight:bold;font-size:13px;padding:5px;">${m.nombreMes}</td>`;
+      });
+      html += "</tr><tr>";
+      datosMeses.forEach(() => {
+        html += `<td></td>${DIAS_SEMANA_DOM.map(d => `<td style="background:#dddddd;font-weight:bold;padding:3px;font-size:11px;">${d}</td>`).join("")}`;
+      });
+      html += "</tr>";
+
+      for (let i = 0; i < maxSemanas; i++) {
+        html += "<tr>";
+        datosMeses.forEach(m => {
+          const semana = m.semanas[i];
+          if (!semana) {
+            html += `<td></td>${Array(7).fill('<td style="padding:8px;">&nbsp;</td>').join("")}`;
+            return;
+          }
+          html += `<td style="background:#f0f0f0;font-size:10px;color:#888888;">${semana.weekNum}</td>`;
+          semana.dias.forEach(d => {
+            if (d === null) {
+              html += `<td style="padding:8px;">&nbsp;</td>`;
+            } else {
+              const fechaStr = `${anio}-${String(m.mes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+              const esTardia = m.fechasRegistradas.has(fechaStr);
+              const estilo = esTardia
+                ? "background:#ff0000;color:#ffffff;font-weight:bold;padding:8px;font-size:12px;"
+                : "padding:8px;font-size:12px;";
+              html += `<td style="${estilo}">${d}</td>`;
+            }
+          });
+        });
+        html += "</tr>";
+      }
+
+      return html;
+    }
+
+    // Arma un archivo .xls (HTML con MIME de Excel) y dispara la descarga.
+    function descargarHTMLComoExcel(htmlContenido, nombreArchivo) {
+      const plantilla = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="UTF-8"></head>
+        <body>${htmlContenido}</body>
+        </html>`;
+      const blob = new Blob(["\ufeff", plantilla], { type: "application/vnd.ms-excel" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = nombreArchivo;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportarCalendarioMes() {
+      const mesSeleccionado = document.getElementById("mesFiltro").value;
+      if (!mesSeleccionado) return alert("Selecciona un mes primero.");
+      const [anio, mes] = mesSeleccionado.split("-").map(Number);
+      const tabla = generarTablaCalendarioMes(anio, mes);
+      descargarHTMLComoExcel(tabla, `calendario_${mesSeleccionado}.xls`);
+    }
+
+    function exportarCalendarioAnio() {
+      const mesSeleccionado = document.getElementById("mesFiltro").value;
+      if (!mesSeleccionado) return alert("Selecciona un mes primero (se usará el año de esa fecha).");
+      const anio = Number(mesSeleccionado.split("-")[0]);
+
+      let html = `<table border="1" style="border-collapse:collapse; font-family:Aptos, Arial, sans-serif; text-align:center;">`;
+      html += `<tr><td colspan="24" style="font-size:18px;font-weight:bold;text-align:center;padding:8px;">${anio}</td></tr>`;
+      html += generarBloqueTresMeses(anio, 1);
+      html += generarBloqueTresMeses(anio, 4);
+      html += generarBloqueTresMeses(anio, 7);
+      html += generarBloqueTresMeses(anio, 10);
+      html += "</table>";
+
+      descargarHTMLComoExcel(html, `calendario_anual_${anio}.xls`);
     }
 
     // Funciones para Backup (Exportar / Importar Archivo JSON)
