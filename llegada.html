@@ -442,21 +442,21 @@
       );
       const semanas = generarSemanasMes(anio, mes);
 
-      let html = `<table border="1" style="border-collapse:collapse; font-family:Aptos, Arial, sans-serif; text-align:center;">`;
-      html += `<tr><td></td><td colspan="7" style="background:#333333;color:#ffffff;font-weight:bold;font-size:14px;padding:6px;">${nombreMes}</td></tr>`;
-      html += `<tr><td></td>${DIAS_SEMANA_DOM.map(d => `<td style="background:#dddddd;font-weight:bold;padding:4px;">${d}</td>`).join("")}</tr>`;
+      let html = `<table border="0" style="border-collapse:collapse; font-family:Aptos, Arial, sans-serif; text-align:center;">`;
+      html += `<tr><td style="border:none;"></td><td colspan="7" style="border:1px solid #999999;background:#333333;color:#ffffff;font-weight:bold;font-size:14px;padding:6px;">${nombreMes}</td></tr>`;
+      html += `<tr><td style="border:none;"></td>${DIAS_SEMANA_DOM.map(d => `<td style="border:1px solid #999999;background:#dddddd;font-weight:bold;padding:4px;">${d}</td>`).join("")}</tr>`;
 
       semanas.forEach(semana => {
-        html += `<tr><td style="background:#f0f0f0;font-size:11px;color:#888888;">${semana.weekNum}</td>`;
+        html += `<tr><td style="border:none;background:#f0f0f0;font-size:11px;color:#888888;">${semana.weekNum}</td>`;
         semana.dias.forEach(d => {
           if (d === null) {
-            html += `<td style="padding:14px;">&nbsp;</td>`;
+            html += `<td style="border:1px solid #999999;padding:14px;">&nbsp;</td>`;
           } else {
             const fechaStr = `${anio}-${String(mes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
             const esTardia = fechasRegistradas.has(fechaStr);
             const estilo = esTardia
-              ? "background:#ff0000;color:#ffffff;font-weight:bold;padding:14px;"
-              : "padding:14px;";
+              ? "border:1px solid #999999;background:#ff0000;color:#ffffff;font-weight:bold;padding:14px;"
+              : "border:1px solid #999999;padding:14px;";
             html += `<td style="${estilo}">${d}</td>`;
           }
         });
@@ -482,38 +482,42 @@
       });
 
       const maxSemanas = Math.max(...datosMeses.map(m => m.semanas.length));
+      const espaciador = `<td style="border:none;width:14px;"></td>`;
 
       let html = "<tr>";
-      datosMeses.forEach(m => {
-        html += `<td></td><td colspan="7" style="background:#333333;color:#ffffff;font-weight:bold;font-size:13px;padding:5px;">${m.nombreMes}</td>`;
+      datosMeses.forEach((m, idx) => {
+        html += `<td style="border:none;"></td><td colspan="7" style="border:1px solid #999999;background:#333333;color:#ffffff;font-weight:bold;font-size:13px;padding:5px;">${m.nombreMes}</td>`;
+        if (idx < datosMeses.length - 1) html += espaciador;
       });
       html += "</tr><tr>";
-      datosMeses.forEach(() => {
-        html += `<td></td>${DIAS_SEMANA_DOM.map(d => `<td style="background:#dddddd;font-weight:bold;padding:3px;font-size:11px;">${d}</td>`).join("")}`;
+      datosMeses.forEach((m, idx) => {
+        html += `<td style="border:none;"></td>${DIAS_SEMANA_DOM.map(d => `<td style="border:1px solid #999999;background:#dddddd;font-weight:bold;padding:3px;font-size:11px;">${d}</td>`).join("")}`;
+        if (idx < datosMeses.length - 1) html += espaciador;
       });
       html += "</tr>";
 
       for (let i = 0; i < maxSemanas; i++) {
         html += "<tr>";
-        datosMeses.forEach(m => {
+        datosMeses.forEach((m, idx) => {
           const semana = m.semanas[i];
           if (!semana) {
-            html += `<td></td>${Array(7).fill('<td style="padding:8px;">&nbsp;</td>').join("")}`;
-            return;
+            html += `<td style="border:none;"></td>${Array(7).fill('<td style="border:1px solid #999999;padding:8px;">&nbsp;</td>').join("")}`;
+          } else {
+            html += `<td style="border:none;background:#f0f0f0;font-size:10px;color:#888888;">${semana.weekNum}</td>`;
+            semana.dias.forEach(d => {
+              if (d === null) {
+                html += `<td style="border:1px solid #999999;padding:8px;">&nbsp;</td>`;
+              } else {
+                const fechaStr = `${anio}-${String(m.mes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+                const esTardia = m.fechasRegistradas.has(fechaStr);
+                const estilo = esTardia
+                  ? "border:1px solid #999999;background:#ff0000;color:#ffffff;font-weight:bold;padding:8px;font-size:12px;"
+                  : "border:1px solid #999999;padding:8px;font-size:12px;";
+                html += `<td style="${estilo}">${d}</td>`;
+              }
+            });
           }
-          html += `<td style="background:#f0f0f0;font-size:10px;color:#888888;">${semana.weekNum}</td>`;
-          semana.dias.forEach(d => {
-            if (d === null) {
-              html += `<td style="padding:8px;">&nbsp;</td>`;
-            } else {
-              const fechaStr = `${anio}-${String(m.mes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-              const esTardia = m.fechasRegistradas.has(fechaStr);
-              const estilo = esTardia
-                ? "background:#ff0000;color:#ffffff;font-weight:bold;padding:8px;font-size:12px;"
-                : "padding:8px;font-size:12px;";
-              html += `<td style="${estilo}">${d}</td>`;
-            }
-          });
+          if (idx < datosMeses.length - 1) html += espaciador;
         });
         html += "</tr>";
       }
@@ -552,8 +556,8 @@
       if (!mesSeleccionado) return alert("Selecciona un mes primero (se usará el año de esa fecha).");
       const anio = Number(mesSeleccionado.split("-")[0]);
 
-      let html = `<table border="1" style="border-collapse:collapse; font-family:Aptos, Arial, sans-serif; text-align:center;">`;
-      html += `<tr><td colspan="24" style="font-size:18px;font-weight:bold;text-align:center;padding:8px;">${anio}</td></tr>`;
+      let html = `<table border="0" style="border-collapse:collapse; font-family:Aptos, Arial, sans-serif; text-align:center;">`;
+      html += `<tr><td colspan="26" style="border:none;font-size:18px;font-weight:bold;text-align:center;padding:8px;">${anio}</td></tr>`;
       html += generarBloqueTresMeses(anio, 1);
       html += generarBloqueTresMeses(anio, 4);
       html += generarBloqueTresMeses(anio, 7);
