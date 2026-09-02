@@ -163,6 +163,16 @@
       font-weight: 600;
       text-align: right;
     }
+    .inv-row-tight {
+      justify-content: flex-start;
+      gap: 6px;
+    }
+    .inv-row-tight .label {
+      flex: none;
+    }
+    .inv-row-tight .value {
+      text-align: left;
+    }
     .inv-total {
       margin-top: 16px;
       border-radius: 8px;
@@ -306,12 +316,12 @@
         </div>
         <div class="badge">PENDIENTE</div>
       </div>
-      <div class="inv-row">
-        <div class="label">Cliente</div>
+      <div class="inv-row inv-row-tight">
+        <div class="label">Cliente:</div>
         <div class="value" id="prevCliente">—</div>
       </div>
-      <div class="inv-row">
-        <div class="label">Servicio</div>
+      <div class="inv-row inv-row-tight">
+        <div class="label">Servicio:</div>
         <div class="value" id="prevServicio">—</div>
       </div>
       <div class="inv-total">
