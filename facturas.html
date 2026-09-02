@@ -303,6 +303,7 @@
     <h2>📌 Datos de la factura</h2>
     <input type="text" id="cliente" placeholder="Cliente" oninput="actualizarPreview()">
     <input type="text" id="servicio" placeholder="Nombre del servicio" oninput="actualizarPreview()">
+    <input type="date" id="fecha" oninput="actualizarPreview()">
     <input type="number" id="monto" placeholder="Monto pendiente" step="0.01" oninput="actualizarPreview()">
   </div>
 
@@ -323,6 +324,10 @@
       <div class="inv-row inv-row-tight">
         <div class="label">Servicio:</div>
         <div class="value" id="prevServicio">—</div>
+      </div>
+      <div class="inv-row inv-row-tight">
+        <div class="label">Fecha de Facturación:</div>
+        <div class="value" id="prevFecha">—</div>
       </div>
       <div class="inv-total">
         <div class="label">Monto pendiente</div>
@@ -349,6 +354,7 @@
   <script>
     const cliente = document.getElementById("cliente");
     const servicio = document.getElementById("servicio");
+    const fecha = document.getElementById("fecha");
     const monto = document.getElementById("monto");
     const toggleBtn = document.getElementById("toggleTheme");
 
@@ -358,6 +364,7 @@
       const guardado = JSON.parse(localStorage.getItem(CLAVE_STORAGE)) || {};
       cliente.value = guardado.cliente || "";
       servicio.value = guardado.servicio || "";
+      fecha.value = guardado.fecha || "";
       monto.value = guardado.monto || "";
     }
 
@@ -365,6 +372,7 @@
       localStorage.setItem(CLAVE_STORAGE, JSON.stringify({
         cliente: cliente.value,
         servicio: servicio.value,
+        fecha: fecha.value,
         monto: monto.value
       }));
     }
@@ -374,9 +382,16 @@
       return "Gs. " + Number(v).toLocaleString("es-PY");
     }
 
+    function formatearFecha(str) {
+      if (!str) return "—";
+      const [y, m, d] = str.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
     function actualizarPreview() {
       document.getElementById("prevCliente").textContent = cliente.value || "—";
       document.getElementById("prevServicio").textContent = servicio.value || "—";
+      document.getElementById("prevFecha").textContent = formatearFecha(fecha.value);
       document.getElementById("prevMonto").textContent = formatearMonto(monto.value);
 
       const hoy = new Date();
@@ -435,6 +450,7 @@
         localStorage.removeItem(CLAVE_STORAGE);
         cliente.value = "";
         servicio.value = "";
+        fecha.value = "";
         monto.value = "";
         actualizarPreview();
         alert("Todos los datos fueron borrados ✅");
