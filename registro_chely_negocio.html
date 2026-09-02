@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Registro Chely / Negocio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="ico.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     /* ============================================================
        PLANTILLA BASE — Dark Passenger Tools
@@ -122,6 +122,14 @@
     }
     .btn-eliminar-chico:hover {
       background: #d32f2f;
+    }
+
+    .btn-compartir {
+      background: #7e57c2;
+      font-size: 13px;
+    }
+    .btn-compartir:hover {
+      background: #5e35b1;
     }
 
     #toggleTheme {
@@ -314,63 +322,72 @@
   </div>
 
   <div class="bloque">
-    <h2>📊 Tabla por fecha</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Chely</th>
-          <th>Negocio</th>
-        </tr>
-      </thead>
-      <tbody id="cuerpoTabla"></tbody>
-      <tfoot>
-        <tr>
-          <td>Total</td>
-          <td id="totalChely">0</td>
-          <td id="totalNegocio">0</td>
-        </tr>
-      </tfoot>
-    </table>
-    <div class="total-general" id="totalGeneral"></div>
+    <div id="capturaTablaFecha">
+      <h2>📊 Tabla por fecha</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Chely</th>
+            <th>Negocio</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTabla"></tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td id="totalChely">0</td>
+            <td id="totalNegocio">0</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="total-general" id="totalGeneral"></div>
+    </div>
+    <button class="btn-compartir" onclick="compartirComoImagen('capturaTablaFecha', 'tabla_por_fecha.png')">📤 Compartir como imagen</button>
   </div>
 
   <div class="bloque">
-    <h2>📊 Tabla Chely</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Monto</th>
-        </tr>
-      </thead>
-      <tbody id="cuerpoTablaChely"></tbody>
-      <tfoot>
-        <tr>
-          <td>Total</td>
-          <td id="totalChelySola">0</td>
-        </tr>
-      </tfoot>
-    </table>
+    <div id="capturaTablaChely">
+      <h2>📊 Tabla Chely</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Monto</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTablaChely"></tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td id="totalChelySola">0</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <button class="btn-compartir" onclick="compartirComoImagen('capturaTablaChely', 'tabla_chely.png')">📤 Compartir como imagen</button>
   </div>
 
   <div class="bloque">
-    <h2>📊 Tabla Negocio</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Monto</th>
-        </tr>
-      </thead>
-      <tbody id="cuerpoTablaNegocio"></tbody>
-      <tfoot>
-        <tr>
-          <td>Total</td>
-          <td id="totalNegocioSolo">0</td>
-        </tr>
-      </tfoot>
-    </table>
+    <div id="capturaTablaNegocio">
+      <h2>📊 Tabla Negocio</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Monto</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTablaNegocio"></tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td id="totalNegocioSolo">0</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <button class="btn-compartir" onclick="compartirComoImagen('capturaTablaNegocio', 'tabla_negocio.png')">📤 Compartir como imagen</button>
   </div>
 
   <div class="bloque">
@@ -583,6 +600,42 @@
       renderTabla();
       renderTablasIndividuales();
       mostrarResumen();
+    }
+
+    // ------------------------------------------------------------
+    // COMPARTIR TABLA COMO IMAGEN
+    // ------------------------------------------------------------
+    async function compartirComoImagen(elementId, nombreArchivo) {
+      const el = document.getElementById(elementId);
+      const bgColor = getComputedStyle(document.querySelector(".bloque")).backgroundColor;
+
+      const canvas = await html2canvas(el, {
+        backgroundColor: bgColor,
+        scale: 2
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert("No se pudo generar la imagen.");
+          return;
+        }
+        const file = new File([blob], nombreArchivo, { type: "image/png" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: nombreArchivo });
+          } catch (e) {
+            // El usuario canceló el compartir, no hacer nada
+          }
+        } else {
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = nombreArchivo;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }, "image/png");
     }
 
     // ------------------------------------------------------------
