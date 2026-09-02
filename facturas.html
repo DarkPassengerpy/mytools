@@ -85,11 +85,11 @@
     }
 
     .btn-copiar {
-      background: #25d366;
+      background: #35BADB;
       font-weight: bold;
     }
     .btn-copiar:hover {
-      background: #128c7e;
+      background: #279cbb;
     }
 
     .btn-borrar {
@@ -313,7 +313,6 @@
       <div class="inv-header">
         <div>
           <h3>FACTURA</h3>
-          <span id="prevFechaGen"></span>
         </div>
         <div class="badge">PENDIENTE</div>
       </div>
@@ -335,7 +334,7 @@
       </div>
     </div>
 
-    <button class="btn-copiar" onclick="compartirImagen()">📲 Compartir por WhatsApp</button>
+    <button class="btn-copiar" onclick="compartirImagen()">📲 Compartir</button>
     <button class="btn-principal" onclick="descargarImagen()">📥 Descargar imagen</button>
     <div class="hint">En celular se abre el panel de compartir del sistema. En PC se descarga la imagen.</div>
   </div>
@@ -393,9 +392,6 @@
       document.getElementById("prevServicio").textContent = servicio.value || "—";
       document.getElementById("prevFecha").textContent = formatearFecha(fecha.value);
       document.getElementById("prevMonto").textContent = formatearMonto(monto.value);
-
-      const hoy = new Date();
-      document.getElementById("prevFechaGen").textContent = "Generada el " + hoy.toLocaleDateString("es-PY");
 
       guardarDatos();
     }
