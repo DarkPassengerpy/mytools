@@ -321,14 +321,14 @@
   </div>
 
   <div class="bloque">
-    <h2>📌 Datos de la factura</h2>
-    <select id="cliente" onchange="seleccionarCliente()">
-      <option value="">Seleccionar cliente</option>
-      <option value="Iván">Iván</option>
-      <option value="Rolo">Rolo</option>
-      <option value="Jorge">Jorge</option>
-      <option value="Paola">Paola</option>
-    </select>
+    <h2>📌 Datos</h2>
+    <input type="text" id="cliente" list="listaClientes" placeholder="Cliente (elegí de la lista o escribí uno nuevo)" oninput="seleccionarCliente()">
+    <datalist id="listaClientes">
+      <option value="Iván">
+      <option value="Rolo">
+      <option value="Jorge">
+      <option value="Paola">
+    </datalist>
     <input type="text" id="servicio" placeholder="Nombre del servicio" oninput="actualizarPreview()">
     <input type="date" id="fecha" oninput="actualizarPreview()">
     <input type="number" id="cantidad" placeholder="Cantidad (opcional)" min="1" step="1" oninput="calcularMonto()">
@@ -431,6 +431,8 @@
         } else {
           monto.value = montoBase;
         }
+      } else {
+        montoBase = null;
       }
       actualizarPreview();
     }
@@ -483,7 +485,7 @@
 
     function generarTexto() {
       const nombre = cliente.value || "cliente";
-      const link = "https://darkpassengerpy.github.io/mytools/cobranza.html";
+      const link = "https://darkpassengerpy.github.io/tools/";
 
       if (tipoDoc.value === "recibo") {
         return `Hola ${nombre}, te dejo una copia de tu recibo.\n\nEste mensaje se envió a través de ${link}`;
