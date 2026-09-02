@@ -51,7 +51,7 @@
       transition: background 0.3s, color 0.3s, box-shadow 0.3s, border 0.3s;
     }
 
-    input {
+    input, select {
       font-family: "Aptos", Arial, sans-serif;
       width: 100%;
       padding: 10px;
@@ -141,13 +141,19 @@
       opacity: 0.7;
     }
     .badge {
-      background: #3a2e0f;
-      color: #fbbf24;
       padding: 4px 10px;
       border-radius: 20px;
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.5px;
+    }
+    .badge-pendiente {
+      background: #3a1414;
+      color: #f87171;
+    }
+    .badge-pagado {
+      background: #10301c;
+      color: #4ade80;
     }
     .inv-row {
       display: flex;
@@ -188,7 +194,12 @@
     .inv-total .value {
       font-size: 22px;
       font-weight: 800;
+    }
+    .monto-pendiente {
       color: #f87171;
+    }
+    .monto-pagado {
+      color: #4ade80;
     }
 
     /* --- TEMA CLARO --- */
@@ -210,7 +221,8 @@
       color: #1976d2;
       border-bottom-color: #eee;
     }
-    body.light input {
+    body.light input,
+    body.light select {
       background: #f9f9f9;
       border: 1px solid #ccc;
       color: #333;
@@ -252,7 +264,8 @@
       color: #81c784;
       border-bottom-color: #444;
     }
-    body.dark input {
+    body.dark input,
+    body.dark select {
       background: #1e1e1e;
       border: 1px solid #444;
       color: #fff;
@@ -300,10 +313,25 @@
   </header>
 
   <div class="bloque">
+    <h2>📌 Tipo de documento</h2>
+    <select id="tipoDoc" onchange="actualizarPreview()">
+      <option value="factura">Factura</option>
+      <option value="recibo">Recibo</option>
+    </select>
+  </div>
+
+  <div class="bloque">
     <h2>📌 Datos de la factura</h2>
-    <input type="text" id="cliente" placeholder="Cliente" oninput="actualizarPreview()">
+    <select id="cliente" onchange="seleccionarCliente()">
+      <option value="">Seleccionar cliente</option>
+      <option value="Iván">Iván</option>
+      <option value="Rolo">Rolo</option>
+      <option value="Jorge">Jorge</option>
+      <option value="Paola">Paola</option>
+    </select>
     <input type="text" id="servicio" placeholder="Nombre del servicio" oninput="actualizarPreview()">
     <input type="date" id="fecha" oninput="actualizarPreview()">
+    <input type="number" id="cantidad" placeholder="Cantidad (opcional)" min="1" step="1" oninput="calcularMonto()">
     <input type="number" id="monto" placeholder="Monto pendiente" step="0.01" oninput="actualizarPreview()">
   </div>
 
@@ -312,9 +340,9 @@
     <div id="invoice">
       <div class="inv-header">
         <div>
-          <h3>FACTURA</h3>
+          <h3 id="prevTitulo">FACTURA</h3>
         </div>
-        <div class="badge">PENDIENTE</div>
+        <div class="badge badge-pendiente" id="prevBadge">PENDIENTE</div>
       </div>
       <div class="inv-row inv-row-tight">
         <div class="label">Cliente:</div>
@@ -325,11 +353,11 @@
         <div class="value" id="prevServicio">—</div>
       </div>
       <div class="inv-row inv-row-tight">
-        <div class="label">Fecha de Facturación:</div>
+        <div class="label" id="prevFechaLabel">Fecha de Facturación:</div>
         <div class="value" id="prevFecha">—</div>
       </div>
       <div class="inv-total">
-        <div class="label">Monto pendiente</div>
+        <div class="label" id="prevMontoLabel">Monto pendiente</div>
         <div class="value" id="prevMonto">—</div>
       </div>
     </div>
@@ -343,7 +371,7 @@
 
   <div class="bloque">
     <h2>ℹ️ ¿Qué es "Generador de Factura"?</h2>
-    <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;">Cargá el cliente, el servicio y el monto pendiente, y generá una imagen de factura lista para compartir por WhatsApp.</p>
+    <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;">Elegí un cliente, ajustá cantidad y monto si hace falta, y generá una imagen de Factura o Recibo lista para compartir por WhatsApp.</p>
   </div>
 
   <footer id="teamName">
@@ -351,29 +379,67 @@
   </footer>
 
   <script>
+    const tipoDoc = document.getElementById("tipoDoc");
     const cliente = document.getElementById("cliente");
     const servicio = document.getElementById("servicio");
     const fecha = document.getElementById("fecha");
+    const cantidad = document.getElementById("cantidad");
     const monto = document.getElementById("monto");
     const toggleBtn = document.getElementById("toggleTheme");
+
+    const DATOS_CLIENTES = {
+      "Iván":  { servicio: "Youtube Premium - (", monto: 25000 },
+      "Rolo":  { servicio: "Crunchirroll | Youtube Premium - (", monto: 35000 },
+      "Jorge": { servicio: "Crunchirroll - (", monto: 13000 },
+      "Paola": { servicio: "HBO MAX - (", monto: 13000 }
+    };
+
+    let montoBase = null;
 
     const CLAVE_STORAGE = "datosGeneradorFactura";
 
     function cargarDatos() {
       const guardado = JSON.parse(localStorage.getItem(CLAVE_STORAGE)) || {};
+      tipoDoc.value = guardado.tipoDoc || "factura";
       cliente.value = guardado.cliente || "";
       servicio.value = guardado.servicio || "";
       fecha.value = guardado.fecha || "";
+      cantidad.value = guardado.cantidad || "";
       monto.value = guardado.monto || "";
+      montoBase = guardado.montoBase ?? null;
     }
 
     function guardarDatos() {
       localStorage.setItem(CLAVE_STORAGE, JSON.stringify({
+        tipoDoc: tipoDoc.value,
         cliente: cliente.value,
         servicio: servicio.value,
         fecha: fecha.value,
-        monto: monto.value
+        cantidad: cantidad.value,
+        monto: monto.value,
+        montoBase: montoBase
       }));
+    }
+
+    function seleccionarCliente() {
+      const datos = DATOS_CLIENTES[cliente.value];
+      if (datos) {
+        servicio.value = datos.servicio;
+        montoBase = datos.monto;
+        if (cantidad.value) {
+          monto.value = montoBase * Number(cantidad.value);
+        } else {
+          monto.value = montoBase;
+        }
+      }
+      actualizarPreview();
+    }
+
+    function calcularMonto() {
+      if (cantidad.value && montoBase !== null) {
+        monto.value = montoBase * Number(cantidad.value);
+      }
+      actualizarPreview();
     }
 
     function formatearMonto(v) {
@@ -393,12 +459,37 @@
       document.getElementById("prevFecha").textContent = formatearFecha(fecha.value);
       document.getElementById("prevMonto").textContent = formatearMonto(monto.value);
 
+      const esRecibo = tipoDoc.value === "recibo";
+      document.getElementById("prevTitulo").textContent = esRecibo ? "RECIBO" : "FACTURA";
+      document.getElementById("prevFechaLabel").textContent = esRecibo ? "Fecha de Recibo:" : "Fecha de Facturación:";
+
+      const badge = document.getElementById("prevBadge");
+      const montoLabel = document.getElementById("prevMontoLabel");
+      const montoValue = document.getElementById("prevMonto");
+      if (esRecibo) {
+        badge.textContent = "PAGADO";
+        badge.className = "badge badge-pagado";
+        montoLabel.textContent = "Monto pagado";
+        montoValue.className = "value monto-pagado";
+      } else {
+        badge.textContent = "PENDIENTE";
+        badge.className = "badge badge-pendiente";
+        montoLabel.textContent = "Monto pendiente";
+        montoValue.className = "value monto-pendiente";
+      }
+
       guardarDatos();
     }
 
     function generarTexto() {
       const nombre = cliente.value || "cliente";
-      return `Hola ${nombre},\n\nLe informamos que se ha generado una nueva factura a su nombre. Nada mejor que llevar tus cuentas al día, por eso no olvides realizar el pago. ¡Que tengas un feliz día!\n\nEste mensaje se envió a través de https://darkpassengerpy.github.io/mytools/facturas.html`;
+      const link = "https://darkpassengerpy.github.io/mytools/cobranza.html";
+
+      if (tipoDoc.value === "recibo") {
+        return `Hola ${nombre}, te dejo una copia de tu recibo.\n\nEste mensaje se envió a través de ${link}`;
+      }
+
+      return `Hola ${nombre},\n\nLe informamos que se ha generado una nueva factura a su nombre. Nada mejor que llevar tus cuentas al día, por eso no olvides realizar el pago. ¡Que tengas un feliz día!\n\nEste mensaje se envió a través de ${link}`;
     }
 
     function generarCanvas() {
@@ -410,8 +501,9 @@
     function descargarImagen() {
       generarCanvas().then(canvas => {
         const link = document.createElement("a");
-        const nombreCliente = (cliente.value || "factura").replace(/\s+/g, "_");
-        link.download = `factura_${nombreCliente}.png`;
+        const nombreCliente = (cliente.value || "cliente").replace(/\s+/g, "_");
+        const prefijo = tipoDoc.value === "recibo" ? "recibo" : "factura";
+        link.download = `${prefijo}_${nombreCliente}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
       });
@@ -420,8 +512,9 @@
     function compartirImagen() {
       generarCanvas().then(canvas => {
         canvas.toBlob(async (blob) => {
-          const nombreCliente = (cliente.value || "factura").replace(/\s+/g, "_");
-          const archivo = new File([blob], `factura_${nombreCliente}.png`, { type: "image/png" });
+          const nombreCliente = (cliente.value || "cliente").replace(/\s+/g, "_");
+          const prefijo = tipoDoc.value === "recibo" ? "recibo" : "factura";
+          const archivo = new File([blob], `${prefijo}_${nombreCliente}.png`, { type: "image/png" });
           const texto = generarTexto();
 
           if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
@@ -433,7 +526,7 @@
           } else {
             alert("Tu navegador no soporta compartir imágenes directamente. Se descargará la imagen para adjuntarla manualmente.");
             const link = document.createElement("a");
-            link.download = `factura_${nombreCliente}.png`;
+            link.download = `${prefijo}_${nombreCliente}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
           }
@@ -444,10 +537,13 @@
     function borrarTodo() {
       if (confirm("¿Estás seguro de borrar todos los datos?")) {
         localStorage.removeItem(CLAVE_STORAGE);
+        tipoDoc.value = "factura";
         cliente.value = "";
         servicio.value = "";
         fecha.value = "";
+        cantidad.value = "";
         monto.value = "";
+        montoBase = null;
         actualizarPreview();
         alert("Todos los datos fueron borrados ✅");
       }
